@@ -158,157 +158,185 @@ export default function AdminSettings() {
                 <title>System Settings | FREIP Admin</title>
             </Head>
 
-            <div className="min-h-screen bg-gray-50 ml-64">
-                <div className="p-6">
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-6">
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">System Settings</h1>
-                            <p className="text-gray-500">Configure platform parameters</p>
-                        </div>
-                        <button
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                        >
-                            <FaSave /> {isSaving ? 'Saving...' : 'Save Changes'}
-                        </button>
+            <div className="min-h-screen bg-gray-50 flex">
+                {/* Sidebar */}
+                <aside className="fixed inset-y-0 left-0 bg-slate-900 text-white w-64 z-40">
+                    <div className="h-16 flex items-center justify-center border-b border-slate-700">
+                        <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                            FREIP Admin
+                        </span>
                     </div>
+                    <nav className="mt-6 px-3">
+                        {[
+                            { label: 'Dashboard', href: '/admin' },
+                            { label: 'Users', href: '/admin/users' },
+                            { label: 'Properties', href: '/admin/properties' },
+                            { label: 'KYC Queue', href: '/admin/kyc' },
+                            { label: 'Settings', href: '/admin/settings' },
+                        ].map((item) => (
+                            <a key={item.href} href={item.href}>
+                                <div className={`flex items-center px-4 py-3 mb-1 rounded-lg cursor-pointer transition-colors
+                                    ${item.href === '/admin/settings' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
+                                    <span className="font-medium">{item.label}</span>
+                                </div>
+                            </a>
+                        ))}
+                    </nav>
+                </aside>
 
-                    {/* Success Message */}
-                    {successMessage && (
-                        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 flex items-center gap-2">
-                            <FaCheckCircle /> {successMessage}
+                {/* Main Content */}
+                <main className="flex-1 ml-64">
+                    <div className="p-6">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-900">System Settings</h1>
+                                <p className="text-gray-500">Configure platform parameters</p>
+                            </div>
+                            <button
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                            >
+                                <FaSave /> {isSaving ? 'Saving...' : 'Save Changes'}
+                            </button>
                         </div>
-                    )}
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Main Settings */}
-                        <div className="lg:col-span-2 space-y-6">
-                            {/* Investment Settings */}
-                            <div className="bg-white rounded-xl border border-gray-100 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Investment Settings</h3>
-                                <div className="space-y-4">
-                                    {['platform_fee_percentage', 'min_investment_amount', 'max_investment_amount'].map((key) => (
-                                        <div key={key} className="flex items-start justify-between gap-4">
-                                            <div className="flex-1">
-                                                <label className="block text-sm font-medium text-gray-700">
-                                                    {settingLabels[key]?.label}
-                                                </label>
-                                                <p className="text-xs text-gray-400 mt-1">{settingLabels[key]?.description}</p>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type={settingLabels[key]?.type}
-                                                    value={settings[key] || ''}
-                                                    onChange={(e) => setSettings(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
-                                                    className="w-32 px-3 py-2 border border-gray-200 rounded-lg text-right"
-                                                />
-                                                <button
-                                                    onClick={() => handleReset(key)}
-                                                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-                                                    title="Reset to default"
-                                                >
-                                                    <FaUndo />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                        {/* Success Message */}
+                        {successMessage && (
+                            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 flex items-center gap-2">
+                                <FaCheckCircle /> {successMessage}
                             </div>
+                        )}
 
-                            {/* KYC & Referral Settings */}
-                            <div className="bg-white rounded-xl border border-gray-100 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">KYC & Referral Settings</h3>
-                                <div className="space-y-4">
-                                    {['kyc_expiry_days', 'referral_reward_amount'].map((key) => (
-                                        <div key={key} className="flex items-start justify-between gap-4">
-                                            <div className="flex-1">
-                                                <label className="block text-sm font-medium text-gray-700">
-                                                    {settingLabels[key]?.label}
-                                                </label>
-                                                <p className="text-xs text-gray-400 mt-1">{settingLabels[key]?.description}</p>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Main Settings */}
+                            <div className="lg:col-span-2 space-y-6">
+                                {/* Investment Settings */}
+                                <div className="bg-white rounded-xl border border-gray-100 p-6">
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Investment Settings</h3>
+                                    <div className="space-y-4">
+                                        {['platform_fee_percentage', 'min_investment_amount', 'max_investment_amount'].map((key) => (
+                                            <div key={key} className="flex items-start justify-between gap-4">
+                                                <div className="flex-1">
+                                                    <label className="block text-sm font-medium text-gray-700">
+                                                        {settingLabels[key]?.label}
+                                                    </label>
+                                                    <p className="text-xs text-gray-400 mt-1">{settingLabels[key]?.description}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type={settingLabels[key]?.type}
+                                                        value={settings[key] || ''}
+                                                        onChange={(e) => setSettings(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
+                                                        className="w-32 px-3 py-2 border border-gray-200 rounded-lg text-right"
+                                                    />
+                                                    <button
+                                                        onClick={() => handleReset(key)}
+                                                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                                                        title="Reset to default"
+                                                    >
+                                                        <FaUndo />
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type={settingLabels[key]?.type}
-                                                    value={settings[key] || ''}
-                                                    onChange={(e) => setSettings(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
-                                                    className="w-32 px-3 py-2 border border-gray-200 rounded-lg text-right"
-                                                />
-                                                <button
-                                                    onClick={() => handleReset(key)}
-                                                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-                                                    title="Reset to default"
-                                                >
-                                                    <FaUndo />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Maintenance Mode */}
-                            <div className="bg-white rounded-xl border border-gray-100 p-6">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-gray-900">Maintenance Mode</h3>
-                                        <p className="text-sm text-gray-500">Temporarily disable platform access for users</p>
+                                        ))}
                                     </div>
-                                    <button
-                                        onClick={handleToggleMaintenance}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${maintenanceMode
+                                </div>
+
+                                {/* KYC & Referral Settings */}
+                                <div className="bg-white rounded-xl border border-gray-100 p-6">
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">KYC & Referral Settings</h3>
+                                    <div className="space-y-4">
+                                        {['kyc_expiry_days', 'referral_reward_amount'].map((key) => (
+                                            <div key={key} className="flex items-start justify-between gap-4">
+                                                <div className="flex-1">
+                                                    <label className="block text-sm font-medium text-gray-700">
+                                                        {settingLabels[key]?.label}
+                                                    </label>
+                                                    <p className="text-xs text-gray-400 mt-1">{settingLabels[key]?.description}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type={settingLabels[key]?.type}
+                                                        value={settings[key] || ''}
+                                                        onChange={(e) => setSettings(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
+                                                        className="w-32 px-3 py-2 border border-gray-200 rounded-lg text-right"
+                                                    />
+                                                    <button
+                                                        onClick={() => handleReset(key)}
+                                                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                                                        title="Reset to default"
+                                                    >
+                                                        <FaUndo />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Maintenance Mode */}
+                                <div className="bg-white rounded-xl border border-gray-100 p-6">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-gray-900">Maintenance Mode</h3>
+                                            <p className="text-sm text-gray-500">Temporarily disable platform access for users</p>
+                                        </div>
+                                        <button
+                                            onClick={handleToggleMaintenance}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${maintenanceMode
                                                 ? 'bg-red-100 text-red-700 hover:bg-red-200'
                                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                    >
-                                        {maintenanceMode ? <FaToggleOn className="text-xl" /> : <FaToggleOff className="text-xl" />}
-                                        {maintenanceMode ? 'Enabled' : 'Disabled'}
-                                    </button>
-                                </div>
-                                {maintenanceMode && (
-                                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm flex items-center gap-2">
-                                        <FaExclamationTriangle /> Platform is currently in maintenance mode. Users cannot access the system.
+                                                }`}
+                                        >
+                                            {maintenanceMode ? <FaToggleOn className="text-xl" /> : <FaToggleOff className="text-xl" />}
+                                            {maintenanceMode ? 'Enabled' : 'Disabled'}
+                                        </button>
                                     </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Platform Stats Sidebar */}
-                        <div className="space-y-6">
-                            <div className="bg-white rounded-xl border border-gray-100 p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4">Platform Statistics</h3>
-                                <div className="space-y-4">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Database Tables</span>
-                                        <span className="font-medium">{platformStats?.tables || 0}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Total Rows</span>
-                                        <span className="font-medium">{platformStats?.totalRows?.toLocaleString() || 0}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Active Sessions (24h)</span>
-                                        <span className="font-medium">{platformStats?.activeSessions || 0}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-500">Recent Actions (24h)</span>
-                                        <span className="font-medium">{platformStats?.recentActions || 0}</span>
-                                    </div>
+                                    {maintenanceMode && (
+                                        <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm flex items-center gap-2">
+                                            <FaExclamationTriangle /> Platform is currently in maintenance mode. Users cannot access the system.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-                            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
-                                <h3 className="font-semibold mb-2">Need Help?</h3>
-                                <p className="text-sm text-blue-100 mb-4">
-                                    Changes to these settings take effect immediately. Use caution when modifying critical parameters.
-                                </p>
-                                <a href="#" className="text-sm font-medium underline">View Documentation</a>
+                            {/* Platform Stats Sidebar */}
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl border border-gray-100 p-6">
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Platform Statistics</h3>
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500">Database Tables</span>
+                                            <span className="font-medium">{platformStats?.tables || 0}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500">Total Rows</span>
+                                            <span className="font-medium">{platformStats?.totalRows?.toLocaleString() || 0}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500">Active Sessions (24h)</span>
+                                            <span className="font-medium">{platformStats?.activeSessions || 0}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-500">Recent Actions (24h)</span>
+                                            <span className="font-medium">{platformStats?.recentActions || 0}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
+                                    <h3 className="font-semibold mb-2">Need Help?</h3>
+                                    <p className="text-sm text-blue-100 mb-4">
+                                        Changes to these settings take effect immediately. Use caution when modifying critical parameters.
+                                    </p>
+                                    <a href="#" className="text-sm font-medium underline">View Documentation</a>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                </main>
             </div>
         </>
     );

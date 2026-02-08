@@ -324,9 +324,8 @@ export default function AdminKYCQueue() {
                             </div>
                         </div>
                     )}
+                </main>
             </div>
-        </main >
-            </div >
         </>
     );
 }
