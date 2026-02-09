@@ -44,7 +44,8 @@ const db = {
     ],
     investments: [],
     transactions: [],
-    dividends: []
+    dividends: [],
+    ledger_entries: []
 };
 
 let userCounter = 1;
@@ -162,6 +163,22 @@ export const mockQuery = async (text, params) => {
         return { rows: [newProp], rowCount: 1 };
     }
 
+    // ------------------------------------------------------------------
+    // LEDGER QUERIES
+    // ------------------------------------------------------------------
+    if (normalized.includes('INSERT INTO LEDGER_ENTRIES')) {
+        const newEntry = {
+            id: db.ledger_entries.length + 1,
+            user_id: params[0],
+            amount: params[1],
+            type: 'debit',
+            description: params[3],
+            balance_after: params[4],
+            created_at: new Date()
+        };
+        db.ledger_entries.push(newEntry);
+        return { rows: [newEntry], rowCount: 1 };
+    }
 
     // Default
     console.log('⚠️ [MOCK DB] Unhandled Query:', text);

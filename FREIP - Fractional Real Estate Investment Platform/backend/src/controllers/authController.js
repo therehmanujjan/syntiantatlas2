@@ -253,21 +253,34 @@ export const logout = async (req, res) => {
 /**
  * Google OAuth - Handle callback and create/link user
  */
+/**
+ * Google OAuth - Handle callback and create/link user
+ */
 export const googleAuth = async (req, res) => {
     try {
         const { googleToken, role_id } = req.body;
+        
+        if (!googleToken) {
+            return res.status(400).json({ error: 'Google token is required' });
+        }
 
-        // In production, verify the Google token with Google's API
-        // For now, we'll decode it (this should use googleapis library in production)
+        // Verify the Google token
+        const { OAuth2Client } = await import('google-auth-library');
+        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID); // Ensure this env var matches frontend
+        
+        let ticket;
+        try {
+             ticket = await client.verifyIdToken({
+                idToken: googleToken,
+                audience: process.env.GOOGLE_CLIENT_ID, 
+            });
+        } catch (verifyError) {
+            console.error('Token verification failed:', verifyError);
+            return res.status(401).json({ error: 'Invalid Google token' });
+        }
 
-        // This is a placeholder - in production, use:
-        // const { OAuth2Client } = require('google-auth-library');
-        // const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-        // const ticket = await client.verifyIdToken({ idToken: googleToken, audience: GOOGLE_CLIENT_ID });
-        // const payload = ticket.getPayload();
-
-        // For demo purposes, we'll accept the token data directly
-        const { email, given_name, family_name, sub: googleId } = req.body;
+        const payload = ticket.getPayload();
+        const { email, given_name, family_name, sub: googleId } = payload;
 
         if (!email) {
             return res.status(400).json({ error: 'Email is required from Google auth' });
