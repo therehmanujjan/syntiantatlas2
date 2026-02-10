@@ -232,7 +232,7 @@ jobs:
             type=ref,event=branch
 
       - name: Build and push API image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/Dockerfile.api
@@ -254,7 +254,7 @@ jobs:
             type=ref,event=branch
 
       - name: Build and push Web image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/Dockerfile.web
