@@ -30,6 +30,8 @@ import { ComplianceModule } from './modules/compliance/compliance.module';
 import { AmlModule } from './modules/aml/aml.module';
 import { AuditExportModule } from './modules/audit-export/audit-export.module';
 import { GovernanceModule } from './modules/governance/governance.module';
+// Phase 13: Content & Learning
+import { ContentModule } from './modules/content/content.module';
 
 @Module({
   imports: [
@@ -69,6 +71,8 @@ import { GovernanceModule } from './modules/governance/governance.module';
     AmlModule,
     AuditExportModule,
     GovernanceModule,
+    // Phase 13: Content & Learning
+    ContentModule,
   ],
   providers: [
     {

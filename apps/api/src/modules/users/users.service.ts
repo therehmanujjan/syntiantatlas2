@@ -10,7 +10,7 @@ import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { UpdateProfileDto, QueryUsersDto, CreateStaffDto, AdminUpdateUserDto, SuspendUserDto } from './dto/users.dto';
+import { UpdateProfileDto, QueryUsersDto, CreateStaffDto, AdminUpdateUserDto, SuspendUserDto, CreateAddressDto, UpdateAddressDto, CreateBankAccountDto, UpdateBankAccountDto } from './dto/users.dto';
 
 @Injectable()
 export class UsersService {
@@ -276,6 +276,134 @@ export class UsersService {
     });
 
     return this.sanitize(updated);
+  }
+
+  // ── Addresses ──
+
+  async getAddresses(userId: number) {
+    return this.prisma.userAddress.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createAddress(userId: number, dto: CreateAddressDto) {
+    if (dto.isDefault) {
+      await this.prisma.userAddress.updateMany({
+        where: { userId },
+        data: { isDefault: false },
+      });
+    }
+    return this.prisma.userAddress.create({
+      data: {
+        userId,
+        street: dto.street,
+        city: dto.city,
+        state: dto.state,
+        postalCode: dto.postalCode,
+        country: dto.country ?? 'Pakistan',
+        isDefault: dto.isDefault ?? false,
+      },
+    });
+  }
+
+  async updateAddress(userId: number, addressId: number, dto: UpdateAddressDto) {
+    const address = await this.prisma.userAddress.findFirst({
+      where: { id: addressId, userId },
+    });
+    if (!address) throw new NotFoundException('Address not found');
+
+    if (dto.isDefault) {
+      await this.prisma.userAddress.updateMany({
+        where: { userId, id: { not: addressId } },
+        data: { isDefault: false },
+      });
+    }
+
+    return this.prisma.userAddress.update({
+      where: { id: addressId },
+      data: {
+        ...(dto.street !== undefined && { street: dto.street }),
+        ...(dto.city !== undefined && { city: dto.city }),
+        ...(dto.state !== undefined && { state: dto.state }),
+        ...(dto.postalCode !== undefined && { postalCode: dto.postalCode }),
+        ...(dto.country !== undefined && { country: dto.country }),
+        ...(dto.isDefault !== undefined && { isDefault: dto.isDefault }),
+      },
+    });
+  }
+
+  async deleteAddress(userId: number, addressId: number) {
+    const address = await this.prisma.userAddress.findFirst({
+      where: { id: addressId, userId },
+    });
+    if (!address) throw new NotFoundException('Address not found');
+
+    await this.prisma.userAddress.delete({ where: { id: addressId } });
+    return { message: 'Address deleted' };
+  }
+
+  // ── Bank Accounts ──
+
+  async getBankAccounts(userId: number) {
+    return this.prisma.bankAccount.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createBankAccount(userId: number, dto: CreateBankAccountDto) {
+    if (dto.isDefault) {
+      await this.prisma.bankAccount.updateMany({
+        where: { userId },
+        data: { isDefault: false },
+      });
+    }
+    return this.prisma.bankAccount.create({
+      data: {
+        userId,
+        bankName: dto.bankName,
+        accountTitle: dto.accountTitle,
+        iban: dto.iban,
+        branchCode: dto.branchCode,
+        isDefault: dto.isDefault ?? false,
+      },
+    });
+  }
+
+  async updateBankAccount(userId: number, accountId: number, dto: UpdateBankAccountDto) {
+    const account = await this.prisma.bankAccount.findFirst({
+      where: { id: accountId, userId },
+    });
+    if (!account) throw new NotFoundException('Bank account not found');
+
+    if (dto.isDefault) {
+      await this.prisma.bankAccount.updateMany({
+        where: { userId, id: { not: accountId } },
+        data: { isDefault: false },
+      });
+    }
+
+    return this.prisma.bankAccount.update({
+      where: { id: accountId },
+      data: {
+        ...(dto.bankName !== undefined && { bankName: dto.bankName }),
+        ...(dto.accountTitle !== undefined && { accountTitle: dto.accountTitle }),
+        ...(dto.iban !== undefined && { iban: dto.iban }),
+        ...(dto.branchCode !== undefined && { branchCode: dto.branchCode }),
+        ...(dto.isDefault !== undefined && { isDefault: dto.isDefault }),
+      },
+    });
+  }
+
+  async deleteBankAccount(userId: number, accountId: number) {
+    const account = await this.prisma.bankAccount.findFirst({
+      where: { id: accountId, userId },
+    });
+    if (!account) throw new NotFoundException('Bank account not found');
+
+    await this.prisma.bankAccount.delete({ where: { id: accountId } });
+    return { message: 'Bank account deleted' };
   }
 
   private sanitize(user: any) {

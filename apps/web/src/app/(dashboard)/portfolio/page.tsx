@@ -1,16 +1,20 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import {
   FiDollarSign,
-  FiHome,
-  FiPieChart,
-  FiExternalLink,
+  FiGrid,
   FiTrendingUp,
+  FiExternalLink,
 } from 'react-icons/fi';
 import { api } from '@/lib/api-client';
-import type { Investment } from '@/types';
+import { MetricCard } from '@/components/ui/metric-card';
+import { TabNavigation } from '@/components/ui/tab-navigation';
+import { DataTable, type Column } from '@/components/ui/data-table';
+import { EmptyState } from '@/components/ui/empty-state';
+import type { Investment, Property } from '@/types';
 
 function formatPKR(value: string | null | undefined): string {
   if (!value) return 'PKR 0';
@@ -29,11 +33,15 @@ function formatDate(dateStr: string): string {
   });
 }
 
-function StatCardSkeleton() {
+function SummarySkeleton() {
   return (
-    <div className="card animate-pulse">
-      <div className="h-4 bg-gray-200 rounded w-1/2 mb-3" />
-      <div className="h-7 bg-gray-200 rounded w-3/4" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {Array.from({ length: 2 }).map((_, i) => (
+        <div key={i} className="card animate-pulse">
+          <div className="h-4 bg-gray-100 rounded w-1/2 mb-3" />
+          <div className="h-7 bg-gray-100 rounded w-2/3" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -41,83 +49,155 @@ function StatCardSkeleton() {
 function TableSkeleton() {
   return (
     <div className="card animate-pulse space-y-4">
-      <div className="h-5 bg-gray-200 rounded w-1/4" />
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="flex gap-4">
-          <div className="h-4 bg-gray-200 rounded flex-1" />
-          <div className="h-4 bg-gray-200 rounded w-24" />
-          <div className="h-4 bg-gray-200 rounded w-20" />
-          <div className="h-4 bg-gray-200 rounded w-16" />
-          <div className="h-4 bg-gray-200 rounded w-24" />
-        </div>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="h-12 bg-gray-100 rounded" />
       ))}
     </div>
   );
 }
 
+const TABS = [
+  { key: 'ownership', label: 'Area Ownership' },
+  { key: 'accumulated', label: 'Accumulated Property' },
+];
+
+type InvestmentWithProperty = Investment & { property: Property };
+
 export default function PortfolioPage() {
+  const [activeTab, setActiveTab] = useState('ownership');
+
   const { data: portfolio, isLoading, isError } = useQuery({
     queryKey: ['portfolio'],
     queryFn: () => api.getPortfolio(),
   });
 
-  const investments = portfolio?.investments ?? [];
+  const investments = (portfolio?.investments ?? []) as InvestmentWithProperty[];
   const summary = portfolio?.summary;
 
+  // Compute total area owned (sum of areaSqft * ownershipPercentage)
+  const totalAreaOwned = investments.reduce((total, inv) => {
+    const areaSqft = parseFloat(inv.property?.areaSqft ?? '0');
+    const ownership = parseFloat(inv.ownershipPercentage ?? '0') / 100;
+    return total + areaSqft * ownership;
+  }, 0);
+
+  const ownershipColumns: Column<Record<string, unknown>>[] = [
+    {
+      key: 'property',
+      header: 'Property',
+      render: (row) => {
+        const inv = row as unknown as InvestmentWithProperty;
+        return (
+          <div>
+            <p className="font-medium text-gray-900">
+              {inv.property?.title || `Property #${inv.propertyId}`}
+            </p>
+            {inv.property?.city && (
+              <p className="text-xs text-gray-400 mt-0.5">{inv.property.city}</p>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'amountInvested',
+      header: 'Amount Invested',
+      sortable: true,
+      render: (row) => (
+        <span className="font-semibold text-gray-800">
+          {formatPKR((row as unknown as InvestmentWithProperty).amountInvested)}
+        </span>
+      ),
+    },
+    {
+      key: 'sharesOwned',
+      header: 'Shares',
+      sortable: true,
+      render: (row) => {
+        const shares = (row as unknown as InvestmentWithProperty).sharesOwned;
+        return shares ? parseFloat(shares).toLocaleString() : '-';
+      },
+    },
+    {
+      key: 'ownershipPercentage',
+      header: 'Ownership %',
+      sortable: true,
+      render: (row) => {
+        const pct = (row as unknown as InvestmentWithProperty).ownershipPercentage;
+        return pct ? (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-dao-blue/10 text-dao-blue">
+            {parseFloat(pct).toFixed(2)}%
+          </span>
+        ) : (
+          '-'
+        );
+      },
+    },
+    {
+      key: 'areaSqft',
+      header: 'Area Owned (sq ft)',
+      render: (row) => {
+        const inv = row as unknown as InvestmentWithProperty;
+        const areaSqft = parseFloat(inv.property?.areaSqft ?? '0');
+        const ownership = parseFloat(inv.ownershipPercentage ?? '0') / 100;
+        const area = areaSqft * ownership;
+        return area > 0 ? area.toFixed(2) : '-';
+      },
+    },
+    {
+      key: 'investmentDate',
+      header: 'Date',
+      sortable: true,
+      render: (row) => (
+        <span className="text-gray-500">
+          {formatDate((row as unknown as InvestmentWithProperty).investmentDate)}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      render: (row) => {
+        const inv = row as unknown as InvestmentWithProperty;
+        return inv.propertyId ? (
+          <Link
+            href={`/properties/${inv.propertyId}`}
+            className="text-dao-blue hover:text-dao-blue-dark text-xs font-medium hover:underline inline-flex items-center gap-1"
+          >
+            View <FiExternalLink className="text-[10px]" />
+          </Link>
+        ) : null;
+      },
+    },
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">My Portfolio</h1>
-        <p className="mt-2 text-gray-600">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">My Portfolio</h1>
+        <p className="text-sm text-gray-500 mt-1">
           Track and manage your real estate investments.
         </p>
       </div>
 
-      {/* Stat Cards */}
+      {/* Metric Cards */}
       {isLoading ? (
-        <div className="grid sm:grid-cols-3 gap-6 mb-8">
-          <StatCardSkeleton />
-          <StatCardSkeleton />
-          <StatCardSkeleton />
-        </div>
+        <SummarySkeleton />
       ) : (
-        <div className="grid sm:grid-cols-3 gap-6 mb-8">
-          <div className="card flex items-start gap-4">
-            <div className="w-10 h-10 bg-dao-blue/10 rounded-lg flex items-center justify-center shrink-0">
-              <FiDollarSign className="text-dao-blue text-lg" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Total Invested</p>
-              <p className="text-xl font-bold text-gray-900 mt-1">
-                {formatPKR(summary?.totalInvested)}
-              </p>
-            </div>
-          </div>
-
-          <div className="card flex items-start gap-4">
-            <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center shrink-0">
-              <FiHome className="text-green-600 text-lg" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Properties Owned</p>
-              <p className="text-xl font-bold text-gray-900 mt-1">
-                {summary?.propertyCount ?? 0}
-              </p>
-            </div>
-          </div>
-
-          <div className="card flex items-start gap-4">
-            <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center shrink-0">
-              <FiPieChart className="text-purple-600 text-lg" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Total Shares</p>
-              <p className="text-xl font-bold text-gray-900 mt-1">
-                {summary?.totalShares ? parseFloat(summary.totalShares).toLocaleString() : '0'}
-              </p>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <MetricCard
+            icon={<FiDollarSign />}
+            label="Net Amount Invested (PKR)"
+            value={formatPKR(summary?.totalInvested)}
+            subText={`${summary?.propertyCount ?? 0} properties`}
+          />
+          <MetricCard
+            icon={<FiGrid />}
+            label="Total Area Owned (sq ft)"
+            value={totalAreaOwned > 0 ? totalAreaOwned.toFixed(2) : '0'}
+            subText={`${summary?.totalShares ? parseFloat(summary.totalShares).toLocaleString() : '0'} shares`}
+          />
         </div>
       )}
 
@@ -129,145 +209,111 @@ export default function PortfolioPage() {
         </div>
       )}
 
-      {/* Loading Skeleton for Table */}
-      {isLoading && <TableSkeleton />}
-
-      {/* Empty State */}
-      {!isLoading && !isError && investments.length === 0 && (
-        <div className="text-center py-20">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FiTrendingUp className="text-gray-400 text-2xl" />
-          </div>
-          <p className="text-gray-700 text-lg font-medium">
-            You haven&apos;t made any investments yet
-          </p>
-          <p className="text-gray-500 mt-1 text-sm mb-6">
-            Start building your real estate portfolio today.
-          </p>
-          <Link href="/properties" className="btn-blue inline-flex items-center gap-2">
-            Browse Properties
-            <FiExternalLink className="text-sm" />
-          </Link>
-        </div>
+      {/* Tabs */}
+      {!isError && (
+        <TabNavigation
+          tabs={TABS}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+        />
       )}
 
-      {/* Investments Table */}
-      {!isLoading && !isError && investments.length > 0 && (
-        <div className="card !p-0 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">Your Investments</h2>
-          </div>
+      {/* Tab Content: Area Ownership */}
+      {!isError && activeTab === 'ownership' && (
+        <>
+          {isLoading ? (
+            <TableSkeleton />
+          ) : investments.length === 0 ? (
+            <EmptyState
+              icon={<FiTrendingUp />}
+              heading="No investments yet"
+              message="Start building your real estate portfolio today."
+              actionLabel="Browse Properties"
+              actionHref="/properties"
+            />
+          ) : (
+            <div className="card !p-0 overflow-hidden">
+              <DataTable
+                columns={ownershipColumns}
+                data={investments as unknown as Record<string, unknown>[]}
+                keyField="id"
+              />
+            </div>
+          )}
+        </>
+      )}
 
-          {/* Desktop Table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 text-left">
-                  <th className="px-6 py-3 font-medium text-gray-500">Property</th>
-                  <th className="px-6 py-3 font-medium text-gray-500">Amount Invested</th>
-                  <th className="px-6 py-3 font-medium text-gray-500">Shares</th>
-                  <th className="px-6 py-3 font-medium text-gray-500">Ownership</th>
-                  <th className="px-6 py-3 font-medium text-gray-500">Date</th>
-                  <th className="px-6 py-3 font-medium text-gray-500"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {investments.map((inv: Investment & { property: any }) => (
-                  <tr key={inv.id} className="hover:bg-gray-50 transition">
-                    <td className="px-6 py-4">
+      {/* Tab Content: Accumulated Property */}
+      {!isError && activeTab === 'accumulated' && (
+        <>
+          {isLoading ? (
+            <TableSkeleton />
+          ) : investments.length === 0 ? (
+            <EmptyState
+              icon={<FiGrid />}
+              heading="No accumulated property"
+              message="Your demarcated investments and accumulated units will appear here once available."
+              actionLabel="Browse Properties"
+              actionHref="/properties"
+            />
+          ) : (
+            <div className="space-y-4">
+              {investments.map((inv) => {
+                const areaSqft = parseFloat(inv.property?.areaSqft ?? '0');
+                const ownership = parseFloat(inv.ownershipPercentage ?? '0') / 100;
+                const ownedArea = areaSqft * ownership;
+
+                return (
+                  <div key={inv.id} className="card">
+                    <div className="flex items-start justify-between mb-3">
                       <div>
-                        <p className="font-medium text-gray-900">
-                          {inv.property?.title || `Property #${inv.propertyId}`}
-                        </p>
+                        <h3 className="font-semibold text-gray-900">
+                          {inv.property?.title ?? `Property #${inv.propertyId}`}
+                        </h3>
                         {inv.property?.city && (
-                          <p className="text-xs text-gray-400 mt-0.5">{inv.property.city}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {inv.property.city} &bull; {inv.property.propertyType ?? 'Property'}
+                          </p>
                         )}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-gray-800">
-                      {formatPKR(inv.amountInvested)}
-                    </td>
-                    <td className="px-6 py-4 text-gray-700">
-                      {inv.sharesOwned ? parseFloat(inv.sharesOwned).toLocaleString() : '-'}
-                    </td>
-                    <td className="px-6 py-4">
-                      {inv.ownershipPercentage ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-dao-blue/10 text-dao-blue">
-                          {parseFloat(inv.ownershipPercentage).toFixed(2)}%
-                        </span>
-                      ) : (
-                        '-'
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-gray-500">
-                      {formatDate(inv.investmentDate)}
-                    </td>
-                    <td className="px-6 py-4">
                       {inv.propertyId && (
                         <Link
                           href={`/properties/${inv.propertyId}`}
-                          className="text-dao-blue hover:text-dao-blue-dark text-xs font-medium hover:underline"
+                          className="text-dao-blue text-xs font-medium hover:underline"
                         >
-                          View Property
+                          Details
                         </Link>
                       )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
 
-          {/* Mobile Card List */}
-          <div className="md:hidden divide-y divide-gray-100">
-            {investments.map((inv: Investment & { property: any }) => (
-              <div key={inv.id} className="p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm">
-                      {inv.property?.title || `Property #${inv.propertyId}`}
-                    </p>
-                    {inv.property?.city && (
-                      <p className="text-xs text-gray-400">{inv.property.city}</p>
-                    )}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <p className="text-xs text-gray-400">Invested</p>
+                        <p className="font-semibold text-gray-800">{formatPKR(inv.amountInvested)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Ownership</p>
+                        <p className="font-semibold text-gray-800">
+                          {inv.ownershipPercentage ? `${parseFloat(inv.ownershipPercentage).toFixed(2)}%` : '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Area (sq ft)</p>
+                        <p className="font-semibold text-gray-800">{ownedArea > 0 ? ownedArea.toFixed(2) : '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Total Area</p>
+                        <p className="font-medium text-gray-600">
+                          {areaSqft > 0 ? `${areaSqft.toLocaleString()} sq ft` : '-'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  {inv.propertyId && (
-                    <Link
-                      href={`/properties/${inv.propertyId}`}
-                      className="text-dao-blue text-xs font-medium"
-                    >
-                      View
-                    </Link>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <p className="text-gray-400">Invested</p>
-                    <p className="font-semibold text-gray-800">{formatPKR(inv.amountInvested)}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Shares</p>
-                    <p className="font-medium text-gray-700">
-                      {inv.sharesOwned ? parseFloat(inv.sharesOwned).toLocaleString() : '-'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Ownership</p>
-                    <p className="font-medium text-gray-700">
-                      {inv.ownershipPercentage
-                        ? `${parseFloat(inv.ownershipPercentage).toFixed(2)}%`
-                        : '-'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Date</p>
-                    <p className="font-medium text-gray-700">{formatDate(inv.investmentDate)}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -82,3 +82,94 @@ export class SuspendUserDto {
   @IsString()
   reason?: string;
 }
+
+export class CreateAddressDto {
+  @IsString()
+  street: string;
+
+  @IsString()
+  city: string;
+
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  postalCode?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isDefault?: boolean;
+}
+
+export class UpdateAddressDto {
+  @IsOptional()
+  @IsString()
+  street?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  postalCode?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isDefault?: boolean;
+}
+
+export class CreateBankAccountDto {
+  @IsString()
+  bankName: string;
+
+  @IsString()
+  accountTitle: string;
+
+  @IsString()
+  iban: string;
+
+  @IsOptional()
+  @IsString()
+  branchCode?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isDefault?: boolean;
+}
+
+export class UpdateBankAccountDto {
+  @IsOptional()
+  @IsString()
+  bankName?: string;
+
+  @IsOptional()
+  @IsString()
+  accountTitle?: string;
+
+  @IsOptional()
+  @IsString()
+  iban?: string;
+
+  @IsOptional()
+  @IsString()
+  branchCode?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isDefault?: boolean;
+}

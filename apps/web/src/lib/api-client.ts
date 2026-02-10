@@ -16,6 +16,17 @@ import type {
   TicketReply,
   GovernanceProposal,
   GovernanceVote,
+  DividendsSummary,
+  UserAddress,
+  BankAccount,
+  MarketplaceListing,
+  MarketplaceTrade,
+  MarketplaceStats,
+  ReferralSummary,
+  Report,
+  ContentItem,
+  ContentCategory,
+  ContentProgressSummary,
 } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
@@ -406,6 +417,187 @@ class ApiClient {
 
   async getAuditExportSummary(params?: Record<string, string>) {
     const res = await this.client.get<ApiResponse<any>>('/audit-export/summary', { params });
+    return this.unwrap(res);
+  }
+
+  // Dividends (Investor)
+  async getMyDividends() {
+    const res = await this.client.get<ApiResponse<DividendsSummary>>('/api/dividends/investor/me');
+    return this.unwrap(res);
+  }
+
+  // User Addresses
+  async getAddresses() {
+    const res = await this.client.get<ApiResponse<UserAddress[]>>('/users/addresses');
+    return this.unwrap(res);
+  }
+
+  async createAddress(data: { street: string; city: string; state?: string; postalCode?: string; country: string; isDefault?: boolean }) {
+    const res = await this.client.post<ApiResponse<UserAddress>>('/users/addresses', data);
+    return this.unwrap(res);
+  }
+
+  async updateAddress(id: number, data: Partial<{ street: string; city: string; state: string; postalCode: string; country: string; isDefault: boolean }>) {
+    const res = await this.client.put<ApiResponse<UserAddress>>(`/users/addresses/${id}`, data);
+    return this.unwrap(res);
+  }
+
+  async deleteAddress(id: number) {
+    const res = await this.client.delete<ApiResponse<{ message: string }>>(`/users/addresses/${id}`);
+    return this.unwrap(res);
+  }
+
+  // Bank Accounts
+  async getBankAccounts() {
+    const res = await this.client.get<ApiResponse<BankAccount[]>>('/users/bank-accounts');
+    return this.unwrap(res);
+  }
+
+  async createBankAccount(data: { bankName: string; accountTitle: string; iban: string; branchCode?: string; isDefault?: boolean }) {
+    const res = await this.client.post<ApiResponse<BankAccount>>('/users/bank-accounts', data);
+    return this.unwrap(res);
+  }
+
+  async updateBankAccount(id: number, data: Partial<{ bankName: string; accountTitle: string; iban: string; branchCode: string; isDefault: boolean }>) {
+    const res = await this.client.put<ApiResponse<BankAccount>>(`/users/bank-accounts/${id}`, data);
+    return this.unwrap(res);
+  }
+
+  async deleteBankAccount(id: number) {
+    const res = await this.client.delete<ApiResponse<{ message: string }>>(`/users/bank-accounts/${id}`);
+    return this.unwrap(res);
+  }
+
+  // Legal Info
+  async updateLegalInfo(data: { cnic?: string; isTaxFiler?: boolean; cnicFrontUrl?: string; cnicBackUrl?: string }) {
+    const res = await this.client.put<ApiResponse<User>>('/users/legal-info', data);
+    return this.unwrap(res);
+  }
+
+  // Notification Preferences
+  async getNotificationPreferences() {
+    const res = await this.client.get<ApiResponse<{ pushEnabled: boolean; smsEnabled: boolean; emailDigest: string }>>('/users/notification-preferences');
+    return this.unwrap(res);
+  }
+
+  async updateNotificationPreferences(data: { pushEnabled?: boolean; smsEnabled?: boolean; emailDigest?: string }) {
+    const res = await this.client.put<ApiResponse<{ pushEnabled: boolean; smsEnabled: boolean; emailDigest: string }>>('/users/notification-preferences', data);
+    return this.unwrap(res);
+  }
+
+  // Wallet Info (for settings page)
+  async getWalletInfo() {
+    const res = await this.client.get<ApiResponse<{ walletAddress: string | null; balance: string }>>('/users/wallet-info');
+    return this.unwrap(res);
+  }
+
+  // Transaction Export
+  async exportTransactions(params: { format: string; type?: string; status?: string; startDate?: string; endDate?: string }) {
+    const res = await this.client.get('/transactions/export', { params, responseType: 'blob' });
+    return res.data;
+  }
+
+  // Marketplace
+  async getMarketplaceListings(params?: Record<string, string | number>) {
+    const res = await this.client.get<ApiResponse<{ data: MarketplaceListing[]; pagination: any }>>('/marketplace/listings', { params });
+    return this.unwrap(res);
+  }
+
+  async getMarketplaceListing(id: number) {
+    const res = await this.client.get<ApiResponse<MarketplaceListing>>(`/marketplace/listings/${id}`);
+    return this.unwrap(res);
+  }
+
+  async createMarketplaceListing(data: { propertyId: number; shares: number; pricePerShare: number; expiresAt?: string }) {
+    const res = await this.client.post<ApiResponse<MarketplaceListing>>('/marketplace/listings', data);
+    return this.unwrap(res);
+  }
+
+  async cancelMarketplaceListing(id: number) {
+    const res = await this.client.delete<ApiResponse<{ message: string }>>(`/marketplace/listings/${id}`);
+    return this.unwrap(res);
+  }
+
+  async buyMarketplaceShares(data: { listingId: number; shares: number }) {
+    const res = await this.client.post<ApiResponse<MarketplaceTrade>>('/marketplace/buy', data);
+    return this.unwrap(res);
+  }
+
+  async getMyMarketplaceListings() {
+    const res = await this.client.get<ApiResponse<MarketplaceListing[]>>('/marketplace/my/listings');
+    return this.unwrap(res);
+  }
+
+  async getMyMarketplaceTrades() {
+    const res = await this.client.get<ApiResponse<MarketplaceTrade[]>>('/marketplace/my/trades');
+    return this.unwrap(res);
+  }
+
+  async getMarketplaceStats(propertyId: number) {
+    const res = await this.client.get<ApiResponse<MarketplaceStats>>(`/marketplace/stats/${propertyId}`);
+    return this.unwrap(res);
+  }
+
+  // Reports
+  async generateReport(data: { reportType: string; startDate: string; endDate: string; propertyId?: number }) {
+    const res = await this.client.post<ApiResponse<Report>>('/compliance/reports/generate', data);
+    return this.unwrap(res);
+  }
+
+  async getReportHistory(params?: Record<string, string | number>) {
+    const res = await this.client.get<ApiResponse<Report[]>>('/compliance/reports/history', { params });
+    return this.unwrap(res);
+  }
+
+  async downloadReport(id: number) {
+    const res = await this.client.get(`/compliance/reports/${id}/download`, { responseType: 'blob' });
+    return res.data;
+  }
+
+  // Referrals
+  async getReferralSummary() {
+    const res = await this.client.get<ApiResponse<ReferralSummary>>('/referrals/summary');
+    return this.unwrap(res);
+  }
+
+  async getReferralCode() {
+    const res = await this.client.get<ApiResponse<{ code: string }>>('/referrals/code');
+    return this.unwrap(res);
+  }
+
+  async getReferralActivity() {
+    const res = await this.client.get<ApiResponse<any[]>>('/referrals/activity');
+    return this.unwrap(res);
+  }
+
+  async getReferralEarnings() {
+    const res = await this.client.get<ApiResponse<any[]>>('/referrals/earnings');
+    return this.unwrap(res);
+  }
+
+  // Content / Learn
+  async getContentItems(params?: Record<string, string | number>) {
+    const res = await this.client.get<ApiResponse<{ data: ContentItem[]; pagination: any }>>('/content', { params });
+    return this.unwrap(res);
+  }
+
+  async getContentItem(id: number) {
+    const res = await this.client.get<ApiResponse<ContentItem>>(`/content/${id}`);
+    return this.unwrap(res);
+  }
+
+  async getContentCategories() {
+    const res = await this.client.get<ApiResponse<ContentCategory[]>>('/content/categories');
+    return this.unwrap(res);
+  }
+
+  async getMyContentProgress() {
+    const res = await this.client.get<ApiResponse<ContentProgressSummary>>('/content/me/progress');
+    return this.unwrap(res);
+  }
+
+  async markContentComplete(id: number) {
+    const res = await this.client.post<ApiResponse<any>>(`/content/${id}/complete`);
     return this.unwrap(res);
   }
 }

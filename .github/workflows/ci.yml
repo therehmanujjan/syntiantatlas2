@@ -106,14 +106,11 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/syntiant_atlas_test
 
-      - name: Run API tests
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/syntiant_atlas_test
-          REDIS_URL: redis://localhost:6379
-          JWT_SECRET: test-secret-ci
-          JWT_REFRESH_SECRET: test-refresh-secret-ci
-          NODE_ENV: test
-        run: npx turbo test --filter=@syntiant/api -- --coverage
+      - name: Run API unit tests
+        run: cd apps/api && npx jest --verbose --coverage
+
+      - name: Run API e2e tests
+        run: cd apps/api && npx jest --config ./test/jest-e2e.json --verbose
 
       - name: Upload coverage artifact
         if: always()
@@ -122,6 +119,33 @@ jobs:
           name: api-coverage
           path: apps/api/coverage/
           retention-days: 14
+
+  # -------------------------------------------------------------------------
+  # 2b. Web Tests (Component tests with Jest + Testing Library)
+  # -------------------------------------------------------------------------
+  test-web:
+    name: Test Web
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run web component tests
+        run: cd apps/web && npx jest --verbose
 
   # -------------------------------------------------------------------------
   # 3. Smart-Contract Tests (Hardhat)
@@ -158,7 +182,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [test-api, test-contracts]
+    needs: [test-api, test-web, test-contracts]
 
     steps:
       - name: Checkout repository
