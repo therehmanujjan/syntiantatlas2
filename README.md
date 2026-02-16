@@ -139,27 +139,21 @@ npm run docker:down
 ## 🚀 Deployment
 
 This project is configured for deployment to:
-- **Frontend:** Vercel
-- **Backend:** Railway
-- **Database:** Railway (PostgreSQL)
-- **Cache:** Railway (Redis)
+- **Frontend:** Vercel (Next.js)
+- **Backend:** Railway (NestJS API + Redis)
+- **Database:** Neon (PostgreSQL)
 
-### Deployment Guides
+### Deployment Guide
 
-We've created comprehensive deployment documentation:
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for comprehensive step-by-step instructions including:
 
-1. **[DEPLOYMENT_START_HERE.md](./DEPLOYMENT_START_HERE.md)** - Start here! Overview and quick start
-2. **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Complete step-by-step guide
-3. **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** - Interactive checklist (45-60 min)
-4. **[DEPLOYMENT_QUICK_REFERENCE.md](./DEPLOYMENT_QUICK_REFERENCE.md)** - Commands and quick fixes
-
-### Quick Deployment Steps
-
-1. Push your code to GitHub
-2. Create Railway project and add PostgreSQL + Redis
-3. Configure backend service in Railway
-4. Deploy frontend to Vercel
-5. Connect services and update CORS
+- Complete setup for Vercel, Railway, and Neon
+- Environment variables configuration
+- Database migration steps
+- WebSocket and Redis setup
+- Custom domain configuration
+- Monitoring and troubleshooting
+- Production checklist
 
 **Estimated Time:** 45-60 minutes for first deployment
 
